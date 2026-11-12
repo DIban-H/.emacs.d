@@ -12,7 +12,7 @@
    '(ace-window cape consult consult-org-roam corfu embark embark-consult
 		iedit magit marginalia org-appear org-bullets org-roam
 		org-roam-ui paredit plantuml-mode rust-mode simpleclip
-		vertico zenburn-theme))
+		vertico wgrep zenburn-theme))
  '(scroll-bar-mode nil)
  '(search-invisible nil)
  '(tool-bar-mode nil)
@@ -35,6 +35,7 @@
 ;; (add-to-list 'load-path "~/.emacs.d/own-libs")
 
 (require 'iedit)
+(require 'wgrep)
 (require 'simpleclip)
 (require 'ace-window)
 
@@ -370,7 +371,7 @@
           (mapcar #'my/pred-org-roam-dailies (directory-files dir t "\\.org\\'")))))
 
 (setq org-agenda-files (cons "~/orghirn" (my/filter-org-roam-dailies "~/orghirn/tagesknoten" "2026-02-04")))
-(global-set-key (kbd "C-c M-a") #'org-agenda)
+(global-set-key (kbd "C-c a") #'org-agenda)
 
 (setq org-agenda-prefix-format
       (quote
