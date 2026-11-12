@@ -39,8 +39,10 @@
 (require 'ace-window)
 
 ;;; Apperance
-(when (eq system-type 'windows-nt)
-  (set-frame-font "Consolas 10" nil t))
+(cond
+ ((eq system-type 'windows-nt) (set-frame-font "Consolas 14" nil t))
+ ((eq system-type 'gnu/linux)  (set-frame-font "-GOOG-Cousine-regular-normal-normal-*-*-*-*-*-m-0-iso10646-1" nil t))
+ )
 (load-theme 'zenburn t)
 (add-hook 'text-mode-hook 'visual-line-mode)
 (global-yascroll-bar-mode 1)
@@ -185,11 +187,13 @@
   (interactive)
   (let* ((link (org-element-lineage (org-element-context) '(link) t))
          (type (org-element-property :type link))
-         (url (org-element-property :path link))
-         (url (concat type ":" url)))
-    (kill-new url)
-    (simpleclip-set-contents (substring-no-properties (car kill-ring)))
-    (message "Copied URL.")))
+         (path (org-element-property :path link))
+         (url (concat type ":" path)))
+    (cond
+     ((not type) (message "No link."))
+     (t (kill-new url)
+	(simpleclip-set-contents (substring-no-properties (car kill-ring)))
+	(message "Copied URL.")))))
 
 (defun my/org-link-copy-mouse (ev)
   (interactive "e")
@@ -202,7 +206,7 @@
 (org-defkey org-mouse-map [mouse-2] #'ignore)
 (org-defkey org-mouse-map [down-mouse-2] 'my/org-link-copy-mouse)
 (org-defkey org-mouse-map [mouse-3] #'org-open-at-mouse)
-(global-set-key (kbd "C-c C-x l") #'org-store-link)
+(global-set-key (kbd "C-c l") #'org-store-link)
 
 (org-link-set-parameters "alm"
                          :follow (lambda (label) (browse-url (concat "alm:" label))))
@@ -218,14 +222,22 @@
 ;; (global-set-key (kbd "C-c c") (lambda () (interactive (org-capture nil "t"))))
 ;; (global-set-key (kbd "C-c n n") (lambda() (interactive)(find-file org-default-notes-file)))
 
-(defun my/make-nice-link-format (str)
-  (list 'org-insert-link nil str
-        (let ((ending (replace-regexp-in-string "[\?#].*$" ""
-                                               (replace-regexp-in-string "^.*/" "" str))))
-          (cond
-           ((string-match "merge_requests" str) (concat "MR" ending))
-           (t ending)))))
-(define-key org-mode-map (kbd "C-c C-x C-l") (lambda () (interactive) (eval (my/make-nice-link-format (simpleclip-get-contents)))))
+(defun my/create-link-name (str)
+  (let ((ending (replace-regexp-in-string "[\?#].*$" "" (replace-regexp-in-string "^.*/" "" str))))
+    (cond
+     ((string-match "merge_requests" str) (concat "MR" ending))
+     (t ending))))
+
+(defun my/insert-link (start end)
+  (interactive "r")
+  (let* ((link (simpleclip-get-contents))
+	 (link-name
+	  (cond
+	   ((use-region-p) (buffer-substring start end))
+	   (t (my/create-link-name link)))))
+    (org-insert-link nil link link-name)))
+
+(define-key org-mode-map (kbd "C-c i l") #'my/insert-link)
 
 (defvar my/org-toggle-blocks nil)
 (defun my/org-toggle-blocks ()
@@ -415,7 +427,7 @@
 (global-set-key (kbd "M-o") 'ace-window)
 (global-set-key (kbd "M-i") 'iedit-mode)
 (global-set-key (kbd "C-;") 'comment-line)
-(global-set-key (kbd "M-\\") 'my/kill-whitespace)
+(global-set-key (kbd "C-c w") 'my/kill-whitespace)
 (global-set-key (kbd "C-c d") 'my/browse-file-directory)
 
 (global-set-key (kbd "C-S-n") (lambda() (interactive)(next-line 10)))
@@ -598,7 +610,7 @@
         (progn
           (re-search-backward "[^ \t\r\n]" nil t)
           (re-search-forward "[ \t\r\n]+" nil t)
-          (replace-match " " nil nil))))))
+          (replace-match "" nil nil))))))
 
 (defun my/browse-file-directory ()
   "Open the current file's directory however the OS would."
