@@ -273,7 +273,7 @@
 (setq org-roam-capture-templates
       '(("d" "default" plain "%?"
          :target (file+head "%<%Y%m%d>-${slug}.org"
-                            "#+title: ${title}\n#+category: ${title}")
+                            "#+title: ${title}\n")
          :unnarrowed t)))
 
 (global-set-key (kbd "C-c n l") 'org-roam-buffer-toggle)
@@ -291,7 +291,7 @@
 (setq org-roam-dailies-capture-templates
       '(("d" "default" plain "* TODO %?"
          :target (file+head "%<%Y-%m-%d>-Tagesknoten.org"
-                            "#+title: Tagesknoten vom %<%A den %d. %b %Y>\n#+category: Tagesknoten vom %<%Y-%m-%d>\n"))))
+                            "#+title: Tagesknoten vom %<%A den %d. %b %Y>\n"))))
 
 (global-set-key (kbd "C-c c") 'org-roam-dailies-capture-today)
 
