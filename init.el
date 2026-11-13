@@ -10,9 +10,9 @@
  '(menu-bar-mode t)
  '(package-selected-packages
    '(ace-window cape consult consult-org-roam corfu embark embark-consult
-		iedit magit marginalia org-appear org-bullets org-roam
-		org-roam-ui paredit plantuml-mode rust-mode simpleclip
-		vertico wgrep zenburn-theme))
+		fireplace iedit magit marginalia org-appear
+		org-bullets org-roam org-roam-ui paredit plantuml-mode
+		rust-mode simpleclip snow vertico wgrep zenburn-theme))
  '(scroll-bar-mode nil)
  '(search-invisible nil)
  '(tool-bar-mode nil)
@@ -40,9 +40,11 @@
 (require 'ace-window)
 
 ;;; Apperance
+;; (dolist (font (x-list-fonts "*"))
+;;   (insert (format "%s\n" font)))
 (cond
  ((eq system-type 'windows-nt) (set-frame-font "Consolas 14" nil t))
- ((eq system-type 'gnu/linux)  (set-frame-font "-GOOG-Cousine-regular-normal-normal-*-*-*-*-*-m-0-iso10646-1" nil t))
+ ((eq system-type 'gnu/linux)  (set-frame-font "-GOOG-Cousine-regular-normal-normal-*-19-*-*-*-m-0-iso10646-1" nil t))
  )
 (load-theme 'zenburn t)
 (add-hook 'text-mode-hook 'visual-line-mode)
@@ -238,7 +240,7 @@
 	   (t (my/create-link-name link)))))
     (org-insert-link nil link link-name)))
 
-(define-key org-mode-map (kbd "C-c i l") #'my/insert-link)
+(define-key org-mode-map (kbd "C-c C-x C-l") #'my/insert-link)
 
 (defvar my/org-toggle-blocks nil)
 (defun my/org-toggle-blocks ()
