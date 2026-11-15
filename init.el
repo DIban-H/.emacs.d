@@ -10,9 +10,10 @@
  '(menu-bar-mode t)
  '(package-selected-packages
    '(ace-window cape consult consult-org-roam corfu embark embark-consult
-		fireplace iedit magit marginalia org-appear
-		org-bullets org-roam org-roam-ui paredit plantuml-mode
-		rust-mode simpleclip snow vertico wgrep zenburn-theme))
+		fireplace iedit magit marginalia markdown-mode
+		org-appear org-bullets org-roam org-roam-ui paredit
+		plantuml-mode rust-mode simpleclip snow vertico wgrep
+		zenburn-theme))
  '(scroll-bar-mode nil)
  '(search-invisible nil)
  '(tool-bar-mode nil)
