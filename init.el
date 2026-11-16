@@ -610,11 +610,17 @@
 (defun my/separate-headings ()
   "Add a separator line between all org-headings"
   (interactive "*")
-  (org-map-entries (lambda ()
-		     (insert-char ?\n)
-		     (org-next-visible-heading 1)
-		     (setq org-map-continue-from (point)))
-		   t nil))
+  (save-mark-and-excursion
+    (org-map-entries (lambda ()
+		       (cond
+			((and  (char-equal (char-before) ?\n)
+			       (char-equal (char-before (- (point) 1)) ?\n))
+			 nil)
+			('t
+			 (insert-char ?\n)))
+		       (org-next-visible-heading 1)
+		       (setq org-map-continue-from (point)))
+		     t nil)))
 
 (defun my/kill-whitespace ()
   "Kill the whitespace between two non-whitespace characters"
