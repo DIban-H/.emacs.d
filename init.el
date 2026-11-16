@@ -39,12 +39,13 @@
 (require 'wgrep)
 (require 'simpleclip)
 (require 'ace-window)
+(require 'yascroll)
 
 ;;; Apperance
 ;; (dolist (font (x-list-fonts "*"))
 ;;   (insert (format "%s\n" font)))
 (cond
- ((eq system-type 'windows-nt) (set-frame-font "Consolas 14" nil t))
+ ((eq system-type 'windows-nt) (set-frame-font "Cousine 11" nil t))
  ((eq system-type 'gnu/linux)  (set-frame-font "-GOOG-Cousine-regular-normal-normal-*-19-*-*-*-m-0-iso10646-1" nil t))
  )
 (load-theme 'zenburn t)
@@ -431,7 +432,8 @@
 (global-set-key (kbd "M-o") 'ace-window)
 (global-set-key (kbd "M-i") 'iedit-mode)
 (global-set-key (kbd "C-;") 'comment-line)
-(global-set-key (kbd "C-c w") 'my/kill-whitespace)
+(global-set-key (kbd "C-c s") 'my/separate-headings)
+(global-set-key (kbd "M-\\") 'my/kill-whitespace)
 (global-set-key (kbd "C-c d") 'my/browse-file-directory)
 
 (global-set-key (kbd "C-S-n") (lambda() (interactive)(next-line 10)))
@@ -579,19 +581,19 @@
 (defun my/duplicate-line (n)
   "Duplicate the current line up or down by N lines."
   (interactive "p")
-  (setq col (current-column))
-  (beginning-of-line) (setq start (point))
-  (end-of-line)
-  (if (eobp) (insert-char ?\n) (forward-char))
-  (setq end (point))
-  (let ((line-text (delete-and-extract-region start end)))
-    (insert line-text)
-    (dotimes (i (abs n))
-      (when (< n 0) (forward-line -1))
-      (insert line-text))
-    ;; restore point to original column in moved line
-    (forward-line -1)
-    (forward-char col)))
+  (let ((col   (current-column))
+	(start (progn (beginning-of-line) (point)))
+	(end   (progn (end-of-line) (point))))
+    (if (eobp) (insert-char ?\n) (forward-char))
+    (setq end (point))
+    (let ((line-text (delete-and-extract-region start end)))
+      (insert line-text)
+      (dotimes (i (abs n))
+	(when (< n 0) (forward-line -1))
+	(insert line-text))
+      ;; restore point to original column in moved line
+      (forward-line -1)
+      (forward-char col))))
 
 (defun my/duplicate-line-up (n)
   "Duplicate the current line up by N lines."
@@ -605,6 +607,15 @@
 
 
 ;;; Custom functions
+(defun my/separate-headings ()
+  "Add a separator line between all org-headings"
+  (interactive "*")
+  (org-map-entries (lambda ()
+		     (insert-char ?\n)
+		     (org-next-visible-heading 1)
+		     (setq org-map-continue-from (point)))
+		   t nil))
+
 (defun my/kill-whitespace ()
   "Kill the whitespace between two non-whitespace characters"
   (interactive "*")
