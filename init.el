@@ -74,7 +74,7 @@
 (defun my/trailing-whitespace-handling ()
   "Ensure empty line at end of buffer"
   (interactive)
-  (save-excursion
+  (save-mark-and-excursion
     (save-window-excursion
       (save-restriction
         (save-match-data
@@ -87,7 +87,15 @@
                   (insert-char ?\n)))
             (insert-char ?\n 2)))))))
 
-(add-hook 'write-file-hooks 'my/trailing-whitespace-handling)
+(defun my/write-file-hook ()
+  "Personal hook for writing files"
+  (interactive)
+  (cond
+   ((and (buffer-file-name) (org-roam-dailies--daily-note-p))
+    (my/separate-headings)))
+  (my/trailing-whitespace-handling))
+
+(add-hook 'write-file-hooks #'my/write-file-hook)
 (put 'narrow-to-region 'disabled nil)
 (delete-selection-mode t)
 (simpleclip-mode t)
@@ -102,10 +110,10 @@
 (require 'org-roam)
 (require 'org-roam-ui)
 
-(add-hook 'org-mode-hook 'org-appear-mode)
-(add-hook 'org-mode-hook 'org-indent-mode)
-(add-hook 'org-mode-hook 'org-bullets-mode)
-(add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
+(add-hook 'org-mode-hook #'org-appear-mode)
+(add-hook 'org-mode-hook #'org-indent-mode)
+(add-hook 'org-mode-hook #'org-bullets-mode)
+(add-hook 'org-babel-after-execute-hook #'org-redisplay-inline-images)
 
                                         ; Faces
 (set-face-attribute 'org-ellipsis nil :underline nil)
@@ -184,8 +192,8 @@
   "Re-hide all blocks after a visibility state change."
   (when (derived-mode-p 'org-mode)
     (org-fold-hide-block-all)))
-(add-hook 'org-cycle-hook 'org-cycle-hide-drawers)
-(add-hook 'org-cycle-hook 'my/org-cycle-hide-blocks)
+(add-hook 'org-cycle-hook #'org-cycle-hide-drawers)
+(add-hook 'org-cycle-hook #'my/org-cycle-hide-blocks)
 
 (defun my/org-link-copy ()
   "Extract URL from org-mode link and add it to kill ring."
@@ -205,12 +213,12 @@
   (mouse-set-point ev)
   (my/org-link-copy))
 
-(define-key org-mode-map (kbd "C-x C-l") 'my/org-link-copy)
+(define-key org-mode-map (kbd "C-x C-l") #'my/org-link-copy)
 (setq mouse-1-follows-link nil)
 (setq org-mouse-1-follows-link nil)
 (org-defkey org-mouse-map [mouse-2] #'ignore)
-(org-defkey org-mouse-map [down-mouse-2] 'my/org-link-copy-mouse)
-(org-defkey org-mouse-map [mouse-3] #'org-open-at-mouse)
+(org-defkey org-mouse-map [down-mouse-2] #'my/org-link-copy-mouse)
+(org-defkey org-mouse-map [mouse-3] #'org-open-at-point)
 (global-set-key (kbd "C-c l") #'org-store-link)
 
 (org-link-set-parameters "alm"
@@ -264,11 +272,11 @@
       (org-remove-inline-images)
     (org-display-inline-images)))
 
-(define-key org-mode-map (kbd "<f5>") 'my/org-toggle-blocks)
-(define-key org-mode-map (kbd "<f6>") 'my/org-toggle-inline-images)
+(define-key org-mode-map (kbd "<f5>") #'my/org-toggle-blocks)
+(define-key org-mode-map (kbd "<f6>") #'my/org-toggle-inline-images)
 
-(define-key org-mode-map (kbd "C-c 6") '(lambda () (interactive) (mark-whole-buffer) (org-sort-entries nil ?o nil nil nil nil)))
-(global-set-key (kbd "<f9>") '(lambda () (interactive) (org-roam-node-open (org-roam-node-from-title-or-alias "Hirn"))))
+(define-key org-mode-map (kbd "C-c 6") #'(lambda () (interactive) (mark-whole-buffer) (org-sort-entries nil ?o nil nil nil nil)))
+(global-set-key (kbd "<f9>") #'(lambda () (interactive) (org-roam-node-open (org-roam-node-from-title-or-alias "Hirn"))))
 
 ;; org-roam
 (setq org-roam-directory (file-truename "~/orghirn"))
@@ -280,11 +288,11 @@
                             "#+title: ${title}\n")
          :unnarrowed t)))
 
-(global-set-key (kbd "C-c n l") 'org-roam-buffer-toggle)
-(global-set-key (kbd "C-c n i") 'org-roam-node-insert)
-(global-set-key (kbd "C-c n c") 'org-roam-capture)
-(global-set-key (kbd "C-c n w") 'org-roam-ui-mode)
-(global-set-key (kbd "C-c n e") 'org-roam-extract-subtree)
+(global-set-key (kbd "C-c n l") #'org-roam-buffer-toggle)
+(global-set-key (kbd "C-c n i") #'org-roam-node-insert)
+(global-set-key (kbd "C-c n c") #'org-roam-capture)
+(global-set-key (kbd "C-c n w") #'org-roam-ui-mode)
+(global-set-key (kbd "C-c n e") #'org-roam-extract-subtree)
 
 (org-roam-db-autosync-mode)
 
@@ -297,7 +305,7 @@
          :target (file+head "%<%Y-%m-%d>-Tagesknoten.org"
                             "#+title: Tagesknoten vom %<%A den %d. %b %Y>\n"))))
 
-(global-set-key (kbd "C-c c") 'org-roam-dailies-capture-today)
+(global-set-key (kbd "C-c c") #'org-roam-dailies-capture-today)
 
 (defun my/org-roam-dailies-goto-today ()
   "Go to today, or create if non existent."
@@ -328,10 +336,10 @@
       (org-roam-dailies-goto-next-note)
     (my/org-roam-dailies-goto-today)))
 
-(global-set-key (kbd "<f7>") 'my/org-roam-dailies-goto-previous-note)
-(global-set-key (kbd "<f8>") 'my/org-roam-dailies-goto-next-note)
-(global-set-key (kbd "M-<f7>") 'my/org-roam-dailies-goto-today)
-(global-set-key (kbd "M-<f8>") 'my/org-roam-dailies-goto-today)
+(global-set-key (kbd "<f7>") #'my/org-roam-dailies-goto-previous-note)
+(global-set-key (kbd "<f8>") #'my/org-roam-dailies-goto-next-note)
+(global-set-key (kbd "M-<f7>") #'my/org-roam-dailies-goto-today)
+(global-set-key (kbd "M-<f8>") #'my/org-roam-dailies-goto-today)
 
 (defun my/org-roam-node-find-no-dailies ()
   "Like org-roam-node-find but hies nodes tagged :tagesknoten:"
@@ -342,7 +350,7 @@
    (lambda (node)
      (not (org-roam-dailies--daily-note-p (org-roam-node-file node))))))
 
-(global-set-key (kbd "C-c n f") 'my/org-roam-node-find-no-dailies)
+(global-set-key (kbd "C-c n f") #'my/org-roam-node-find-no-dailies)
 
 
 (defun my/pred-org-roam-dailies (filename)
@@ -401,16 +409,16 @@
 (setq plantuml-default-exec-mode 'jar)
 (setq plantuml-jar-path (expand-file-name "~/plantuml.jar"))
 (setq org-plantuml-jar-path (expand-file-name "~/plantuml.jar"))
-(define-key org-mode-map (kbd "C-c i p") 'my/insert-plantuml-block)
+(define-key org-mode-map (kbd "C-c i p") #'my/insert-plantuml-block)
 
 ;;; Global Keys
 (defvar linez-minor-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-<up>") 'my/move-line-up)
-    (define-key map (kbd "C-<down>") 'my/move-line-down)
-    (define-key map (kbd "C-S-<up>") 'my/duplicate-line-up)
-    (define-key map (kbd "C-S-<down>") 'my/duplicate-line-down)
-    (define-key map (kbd "M-k") 'kill-whole-line)
+    (define-key map (kbd "C-<up>") #'my/move-line-up)
+    (define-key map (kbd "C-<down>") #'my/move-line-down)
+    (define-key map (kbd "C-S-<up>") #'my/duplicate-line-up)
+    (define-key map (kbd "C-S-<down>") #'my/duplicate-line-down)
+    (define-key map (kbd "M-k") #'kill-whole-line)
     map)
   "linez-minor-mode keymap.")
 
@@ -429,22 +437,23 @@
 
 (global-set-key (kbd "C-x ,") (lambda() (interactive)(find-file user-init-file)))
 
-(global-set-key (kbd "M-o") 'ace-window)
-(global-set-key (kbd "M-i") 'iedit-mode)
-(global-set-key (kbd "C-;") 'comment-line)
-(global-set-key (kbd "C-c s") 'my/separate-headings)
-(global-set-key (kbd "M-\\") 'my/kill-whitespace)
-(global-set-key (kbd "C-c d") 'my/browse-file-directory)
+(global-set-key (kbd "M-o") #'ace-window)
+(global-set-key (kbd "M-i") #'iedit-mode)
+(global-set-key (kbd "C-;") #'comment-line)
+(global-set-key (kbd "C-c s") #'my/separate-headings)
+(global-set-key (kbd "M-\\") #'my/kill-whitespace)
+(global-set-key (kbd "C-c d") #'my/browse-file-directory)
 
-(global-set-key (kbd "C-S-n") (lambda() (interactive)(next-line 10)))
-(global-set-key (kbd "C-S-p") (lambda() (interactive)(previous-line 10)))
+(global-set-key (kbd "C-S-n") #'(lambda() (interactive)(next-line 10))
+		)
+(global-set-key (kbd "C-S-p") #'(lambda() (interactive)(previous-line 10)))
 
-(global-set-key (kbd "C-c b") 'my/add-outer-box)
+(global-set-key (kbd "C-c b") #'my/add-outer-box)
 (global-set-key (kbd "C-c m l") #'display-line-numbers-mode)
 (global-set-key (kbd "C-c m w") #'whitespace-mode)
 
 ;; avy
-(define-key global-map (kbd "M-j") 'avy-goto-char-timer)
+(define-key global-map (kbd "M-j") #'avy-goto-char-timer)
 
 
 ;; Minad/Iceberg stack https://lambdaland.org/posts/2024-05-30_top_emacs_packages/
@@ -460,8 +469,8 @@
   )
 
 ;; consult
-(define-key global-map (kbd "C-x b") 'consult-buffer)
-(define-key global-map (kbd "C-c r") 'consult-ripgrep)
+(define-key global-map (kbd "C-x b") #'consult-buffer)
+(define-key global-map (kbd "C-c r") #'consult-ripgrep)
 
 (use-package consult-org-roam
    :ensure t
@@ -700,10 +709,9 @@
   (let ((current-prefix-arg t))
     (command-execute 'magit-stage-modified))
   (sleep-for 2)
-  (command-execute 'magit-commit-create)
-  )
+  (command-execute 'magit-commit-create))
 
-(global-set-key (kbd "C-c v") 'my/magit-full-commit)
+(global-set-key (kbd "C-c v") #'my/magit-full-commit)
 
 ;; Insert files
 (defun my/insert-files-of-folder ()
@@ -716,9 +724,7 @@
 
 ;;; Startup functions
 (defun my/orghirn-fn (switch)
-  (desktop-read "~/.emacs.d/")
-  ;; (command-execute 'magit-pull-from-upstream)
-  )
+  (desktop-read "~/.emacs.d/"))
 
 ;; CLI parsing
 (add-to-list 'command-switch-alist '("-orghirn" . my/orghirn-fn))
