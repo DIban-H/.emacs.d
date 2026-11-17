@@ -709,15 +709,19 @@
 
 (global-set-key (kbd "C-c C-r") #'my/code-executor)
 
+(defun display-prefix (arg)
+  "Display the value of the raw prefix arg."
+  (interactive "P")
+  (message "%s" arg))
+
 ;;; git
 (defun my/magit-full-commit ()
   "Stage all tracked and untracked files"
   (interactive)
   (save-some-buffers t)
-  (let ((current-prefix-arg t))
-    (command-execute #'magit-stage-modified))
+  (call-interactively (lambda () (interactive) (magit-stage-modified '(4))))
   (sleep-for 2)
-  (command-execute #'magit-commit-create))
+  (call-interactively #'magit-commit-create))
 
 (global-set-key (kbd "C-c v") #'my/magit-full-commit)
 
