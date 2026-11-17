@@ -137,6 +137,7 @@
 (setq org-startup-folded 'nofold)
 (setq org-cycle-hide-block-startup t)
 (setq org-return-follows-link t)
+(setq org-goto-auto-isearch nil)
 
 (setq org-file-apps
       '(("\\.pdf\\'" . system)
@@ -173,7 +174,7 @@
 (setq org-hierarchical-todo-statistics nil)
 (setq org-use-fast-todo-selection 'expert)
 
-(setq org-tags-column -90)
+(setq org-tags-column -100)
 (setq org-auto-align-tags t)
 
 (setq org-priority-default 69)
@@ -218,7 +219,7 @@
 (setq org-mouse-1-follows-link nil)
 (org-defkey org-mouse-map [mouse-2] #'ignore)
 (org-defkey org-mouse-map [down-mouse-2] #'my/org-link-copy-mouse)
-(org-defkey org-mouse-map [mouse-3] #'org-open-at-point)
+(org-defkey org-mouse-map [mouse-3] #'org-open-at-mouse)
 (global-set-key (kbd "C-c l") #'org-store-link)
 
 (org-link-set-parameters "alm"
@@ -429,11 +430,18 @@
 
 (linez-minor-mode t)
 
-; Deactivate stupid agenda cycle keys
+(defun my/start-checklist ()
+  "Starts a new line with org checklist"
+  (interactive "*")
+  (org-return)
+  (insert "- [ ] "))
+
+;; Deactivate stupid agenda cycle keys
 (eval-after-load 'org
   '(progn
      (define-key org-mode-map (kbd "C-,") nil)
-     (define-key org-mode-map (kbd "C-'") nil)))
+     (define-key org-mode-map (kbd "C-'") nil)
+     (define-key org-mode-map (kbd "S-<return>") #'my/start-checklist)))
 
 (global-set-key (kbd "C-x ,") (lambda() (interactive)(find-file user-init-file)))
 
@@ -707,9 +715,9 @@
   (interactive)
   (save-some-buffers t)
   (let ((current-prefix-arg t))
-    (command-execute 'magit-stage-modified))
+    (command-execute #'magit-stage-modified))
   (sleep-for 2)
-  (command-execute 'magit-commit-create))
+  (command-execute #'magit-commit-create))
 
 (global-set-key (kbd "C-c v") #'my/magit-full-commit)
 
