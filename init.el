@@ -302,9 +302,9 @@
 (global-set-key (kbd "C-c n d") org-roam-dailies-map)
 
 (setq org-roam-dailies-capture-templates
-      '(("d" "default" plain "* TODO %?"
-         :target (file+head "%<%Y-%m-%d>-Tagesknoten.org"
-                            "#+title: Tagesknoten vom %<%A den %d. %b %Y>\n"))))
+      '(("d" "default" entry "* TODO %?"
+         :target (file+head "%<%Y-%m-%d>-Tagesknoten.org" "#+title: Tagesknoten vom %<%A den %d. %b %Y>\n")
+	 :prepend t)))
 
 (global-set-key (kbd "C-c c") #'org-roam-dailies-capture-today)
 
