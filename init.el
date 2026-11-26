@@ -1,5 +1,4 @@
 ;;; -*- lexical-binding: t -*-
-
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -10,7 +9,7 @@
  '(menu-bar-mode t)
  '(package-selected-packages
    '(ace-window cape consult consult-org-roam corfu embark embark-consult
-		fireplace iedit magit marginalia markdown-mode
+		f fireplace iedit magit marginalia markdown-mode
 		org-appear org-bullets org-roam org-roam-ui paredit
 		plantuml-mode rust-mode simpleclip snow vertico wgrep
 		zenburn-theme))
@@ -35,6 +34,7 @@
 
 ;; (add-to-list 'load-path "~/.emacs.d/own-libs")
 
+(require 'f)
 (require 'iedit)
 (require 'wgrep)
 (require 'simpleclip)
@@ -71,8 +71,17 @@
 
 (prefer-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
-(setq backup-directory-alist `(("." . "~/.saves")))
-;; (add-hook 'dired-mode-hook 'dired-hide-details-mode)
+
+(setq emacs-dir (f-full default-directory))
+(setq home-dir (f-full "~"))
+
+(setq backup-directory-alist `(("." . ,(f-join emacs-dir ".saves"))))
+(setq orghirn-dir (f-join home-dir "orghirn"))
+(if (not (f-directory? orghirn-dir))
+    (mkdir orghirn-dir))
+(setq assets-dir (f-join orghirn-dir "assets/"))
+(if (not (f-directory? assets-dir))
+    (mkdir assets-dir))
 
 (defun my/trailing-whitespace-handling ()
   "Ensure empty line at end of buffer"
@@ -231,7 +240,7 @@
 (define-key org-mode-map (kbd "M-n") #'org-next-link)
 (define-key org-mode-map (kbd "M-p") #'org-previous-link)
 
-(setq org-default-notes-file "~/notes.org")
+(setq org-default-notes-file (f-join orghirn-dir "notes.org"))
 (setq org-capture-templates
       '(("t" "Todo" entry (file+headline org-default-notes-file "Schnellnotizen")
          "* TODO %?\n  %U\n  %a")))
@@ -255,6 +264,19 @@
     (org-insert-link nil link link-name)))
 
 (define-key org-mode-map (kbd "C-c C-x C-l") #'my/insert-link)
+
+(defun my/insert-clipboard-image (identifier)
+  (interactive "sIdentifier: ")
+  (let* ((filename (f-join assets-dir (concat  identifier ".png")))
+	(command-line (concat "xclip -selection clipboard -t image/png -o > \"" filename "\"")))
+    (message command-line)
+    (shell-command command-line)
+    (insert (concat "#+NAME: fig:" identifier))
+    (newline)
+    (insert (concat "[[" filename "]]")))
+  (org-link-preview-region))
+
+(define-key org-mode-map (kbd "C-c C-x C-p") #'my/insert-clipboard-image)
 
 (defvar my/org-toggle-blocks nil)
 (defun my/org-toggle-blocks ()
@@ -283,7 +305,7 @@
 (global-set-key (kbd "<f9>") #'(lambda () (interactive) (org-roam-node-open (org-roam-node-from-title-or-alias "Hirn"))))
 
 ;; org-roam
-(setq org-roam-directory (file-truename "~/orghirn"))
+(setq org-roam-directory orghirn-dir)
 (setq org-roam-completion-everywhere t)
 
 (setq org-roam-capture-templates
@@ -302,6 +324,7 @@
 
 ;; Projekt "Tagesknoten"
 (setq org-roam-dailies-directory "tagesknoten/")
+(setq tagesknoten-dir (f-join org-roam-directory org-roam-dailies-directory))
 (global-set-key (kbd "C-c n d") org-roam-dailies-map)
 
 (setq org-roam-dailies-capture-templates
@@ -357,15 +380,15 @@
 (global-set-key (kbd "C-c n f") #'my/org-roam-node-find-no-dailies)
 
 
-(defun my/pred-org-roam-dailies (filename)
-  "Check if the FILENAME qualifies for inclusion."
-  (let ((fname (file-name-sans-extension (file-name-nondirectory filename))))
-    (string-match "\\(.*\\)-Tagesknoten" fname)
-    (let ((fname-date (match-string 1 fname)))
+(defun my/pred-org-roam-dailies (file)
+  "Check if the FILE qualifies for inclusion."
+  (let ((basename (f-base file)))
+    (string-match "\\(.*\\)-Tagesknoten" basename)
+    (let ((basename-date (match-string 1 basename)))
           ;; if the date corresponding to the name of the file falls above date-min,
-          ;; return the (complete) filename
-          (when (string< date-min fname-date)
-            filename))))
+          ;; return the (complete) file
+          (when (string< date-min basename-date)
+            file))))
 
 ;; org agenda
 (defun my/filter-org-roam-dailies (dir date-min)
@@ -373,32 +396,31 @@
  supposed to have names of the form \"YYYY-MM-DD-Tagesknoten.org\". We only
  accept those whose names have a date part that are after `START-DATE' (inklusive)."
 
-  (cl-flet ((my/pred-org-roam-dailies (filename)
-              "Check if the FILENAME qualifies for inclusion."
+  (cl-flet ((my/pred-org-roam-dailies (file)
+              "Check if the FILE qualifies for inclusion."
               (save-match-data
-                (let* ((fname (file-name-sans-extension (file-name-nondirectory filename)))
+                (let* ((fname (f-base file))
                        (_ (string-match "\\(.*\\)-Tagesknoten" fname))
-                       (fname-date (match-string 1 fname)))
+                       (basename-date (match-string 1 fname)))
                   ;; if the date corresponding to the name of the file falls above date-min,
-                  ;; return the (complete) filename
-                  (when (or (string= date-min fname-date) (string< date-min fname-date))
-                    filename)))))
+                  ;; return the (complete) file
+                  (when (or (string= date-min basename-date) (string< date-min basename-date))
+                    file)))))
     (delq nil
           (mapcar #'my/pred-org-roam-dailies (directory-files dir t "\\.org\\'")))))
 
-(setq org-agenda-files (cons "~/orghirn" (my/filter-org-roam-dailies "~/orghirn/tagesknoten" "2026-02-04")))
+(setq org-agenda-files (cons orghirn-dir (my/filter-org-roam-dailies tagesknoten-dir "2026-02-04")))
 (global-set-key (kbd "C-c a") #'org-agenda)
 
 (setq org-agenda-prefix-format
-      (quote
-       ((agenda . "%-30c%?-30t% s")
-        (timeline . "% s")
-        (todo . "%-30c")
-        (tags . "%-30c")
-        (search . "%-30c"))))
+      '((agenda . "%-30c%?-30t% s")
+	(timeline . "% s")
+	(todo . "%-30c")
+	(tags . "%-30c")
+	(search . "%-30c")))
 
-(setq org-agenda-deadline-leaders (quote ("!D!: " "D%2d: " "")))
-(setq org-agenda-scheduled-leaders (quote ("" "S%3d: ")))
+(setq org-agenda-deadline-leaders  '("!D!: " "D%2d: " ""))
+(setq org-agenda-scheduled-leaders '("" "S%3d: "))
 
 (setq org-agenda-custom-commands
       '(("c" todo "TODO") ;; (1) (3) (4)
@@ -411,8 +433,8 @@
 (plantuml-set-output-type "svg")
 
 (setq plantuml-default-exec-mode 'jar)
-(setq plantuml-jar-path (expand-file-name "~/plantuml.jar"))
-(setq org-plantuml-jar-path (expand-file-name "~/plantuml.jar"))
+(setq plantuml-jar-path (f-join home-dir "plantuml.jar"))
+(setq org-plantuml-jar-path (f-join home-dir "plantuml.jar"))
 (define-key org-mode-map (kbd "C-c i p") #'my/insert-plantuml-block)
 
 ;;; Global Keys
@@ -422,8 +444,8 @@
     (define-key map (kbd "C-<up>") #'org-previous-visible-heading)
     ;; (define-key map (kbd "M-s-<down>") #'my/move-line-down)
     (define-key map (kbd "C-<down>") #'org-next-visible-heading)
-    (define-key map (kbd "M-S-s-<up>") #'my/duplicate-line-up)
-    (define-key map (kbd "M-S-s-<down>") #'my/duplicate-line-down)
+    (define-key map (kbd "C-S-<up>") #'my/duplicate-line-up)
+    (define-key map (kbd "C-S-<down>") #'my/duplicate-line-down)
     (define-key map (kbd "M-k") #'kill-whole-line)
     map)
   "linez-minor-mode keymap.")
@@ -659,7 +681,7 @@
   "Open the current file's directory however the OS would."
   (interactive)
   (if default-directory
-      (browse-url (expand-file-name default-directory))
+      (browse-url (f-full default-directory))
     (error "No `default-directory' to open")))
 
 (defun my/insert-plantuml-block (x)
@@ -705,9 +727,9 @@
   "Compile & Execute the currently open source code buffer"
   (interactive)
   (save-buffer)
-  (let* ((file (buffer-name))
-         (filename (file-name-sans-extension file))
-         (filetype (file-name-extension file)))
+  (let* ((file (buffer-file-name))
+         (filename (f-no-ext file))
+         (filetype (f-ext file)))
     (cond
      ((string-match-p (regexp-quote "rs") filetype)
       (async-shell-command (format "cargo run"))))))
@@ -731,17 +753,19 @@
 (global-set-key (kbd "C-c v") #'my/magit-full-commit)
 
 ;; Insert files
-(defun my/insert-files-of-folder ()
-  (interactive)
-  (let ((dir (read-directory-name "Directory to insert: ")))
-    (mapc #'(lambda (file)
-              (let ((file-full (concat dir file)))
-                (insert-file-contents file-full)))
-          (cddr (directory-files dir)))))
+(defun my/insert-files-of-folder (dir)
+  (interactive "D")
+  (mapc #'(lambda (path)
+	    (if (f-file? path)
+		(insert-file-contents path)))
+	(directory-files dir t)))
 
-;;; Startup functions
+
+;;;
+;;; Startup functions (cannot use global variables)
+;;;
 (defun my/orghirn-fn (switch)
-  (desktop-read "~/.emacs.d/"))
+  (desktop-read "~/.emacs.d"))
 
 ;; CLI parsing
 (add-to-list 'command-switch-alist '("-orghirn" . my/orghirn-fn))
