@@ -25,14 +25,13 @@
  ;; If there is more than one, they won't work right.
  )
 
-;;; Used Modules
+
+;;; Package Wonderland
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
 ;; (package-install-selected-packages)
 ;; (package-upgrade-all)
-
-;; (add-to-list 'load-path "~/.emacs.d/own-libs")
 
 (require 'f)
 (require 'iedit)
@@ -55,20 +54,8 @@
   :config
   (load-theme 'zenburn t))
 
-;; paredit
-(use-package paredit
-  :ensure t
-  :hook ((emacs-lisp-mode     . paredit-mode)
-         (lisp-mode           . paredit-mode)
-         (scheme-mode         . paredit-mode)
-         (clojure-mode        . paredit-mode)
-         (clojure-script-mode . paredit-mode)))
-
+
 ;;; Global settings
-
-;; Workaround (https://www.reddit.com/r/emacs/comments/1hayavx/invalid_function_orgelementwithdisabledcache/)
-;; (setq native-comp-jit-compilation-deny-list '(".*org-element.*"))
-
 (prefer-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
 
@@ -82,6 +69,9 @@
 (setq assets-dir (f-join orghirn-dir "assets/"))
 (if (not (f-directory? assets-dir))
     (mkdir assets-dir))
+
+;; Workaround (https://www.reddit.com/r/emacs/comments/1hayavx/invalid_function_orgelementwithdisabledcache/)
+;; (setq native-comp-jit-compilation-deny-list '(".*org-element.*"))
 
 (defun my/trailing-whitespace-handling ()
   "Ensure empty line at end of buffer"
@@ -102,9 +92,8 @@
 (defun my/write-file-hook ()
   "Personal hook for writing files"
   (interactive)
-  (cond
-   ((and (buffer-file-name) (org-roam-dailies--daily-note-p))
-    (my/separate-headings)))
+  (when (and (buffer-file-name) (org-roam-dailies--daily-note-p))
+    (my/separate-headings))
   (my/trailing-whitespace-handling))
 
 (add-hook 'write-file-hooks #'my/write-file-hook)
@@ -112,8 +101,8 @@
 (delete-selection-mode t)
 (simpleclip-mode t)
 
-;; Org
-                                        ; Modes
+
+;;; Org
 (require 'org)
 (require 'ol)
 (require 'org-appear)
@@ -598,6 +587,15 @@
 (use-package embark-consult
   :ensure t)
 
+;; paredit
+(use-package paredit
+  :ensure t
+  :hook ((emacs-lisp-mode     . paredit-mode)
+         (lisp-mode           . paredit-mode)
+         (scheme-mode         . paredit-mode)
+         (clojure-mode        . paredit-mode)
+         (clojure-script-mode . paredit-mode)))
+
 ;;; Fancy Cursor Movements
 (defun my/move-line (n)
   "Move the current line up or down by N lines."
@@ -760,10 +758,8 @@
 		(insert-file-contents path)))
 	(directory-files dir t)))
 
-
-;;;
+
 ;;; Startup functions (cannot use global variables)
-;;;
 (defun my/orghirn-fn (switch)
   (desktop-read "~/.emacs.d"))
 
