@@ -67,7 +67,7 @@
 ;;; Global settings
 
 ;; Workaround (https://www.reddit.com/r/emacs/comments/1hayavx/invalid_function_orgelementwithdisabledcache/)
-(setq native-comp-jit-compilation-deny-list '(".*org-element.*"))
+;; (setq native-comp-jit-compilation-deny-list '(".*org-element.*"))
 
 (prefer-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
@@ -418,10 +418,12 @@
 ;;; Global Keys
 (defvar linez-minor-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-<up>") #'my/move-line-up)
-    (define-key map (kbd "C-<down>") #'my/move-line-down)
-    (define-key map (kbd "C-S-<up>") #'my/duplicate-line-up)
-    (define-key map (kbd "C-S-<down>") #'my/duplicate-line-down)
+    ;; (define-key map (kbd "M-s-<up>") #'my/move-line-up)
+    (define-key map (kbd "C-<up>") #'org-previous-visible-heading)
+    ;; (define-key map (kbd "M-s-<down>") #'my/move-line-down)
+    (define-key map (kbd "C-<down>") #'org-next-visible-heading)
+    (define-key map (kbd "M-S-s-<up>") #'my/duplicate-line-up)
+    (define-key map (kbd "M-S-s-<down>") #'my/duplicate-line-down)
     (define-key map (kbd "M-k") #'kill-whole-line)
     map)
   "linez-minor-mode keymap.")
