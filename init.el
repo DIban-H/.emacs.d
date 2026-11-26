@@ -48,9 +48,12 @@
  ((eq system-type 'windows-nt) (set-frame-font "Cousine 11" nil t))
  ((eq system-type 'gnu/linux)  (set-frame-font "-GOOG-Cousine-regular-normal-normal-*-19-*-*-*-m-0-iso10646-1" nil t))
  )
-(load-theme 'zenburn t)
 (add-hook 'text-mode-hook 'visual-line-mode)
 (global-yascroll-bar-mode 1)
+
+(use-package zenburn-theme
+  :config
+  (load-theme 'zenburn t))
 
 ;; paredit
 (use-package paredit
@@ -243,7 +246,7 @@
      (t ending))))
 
 (defun my/insert-link (start end)
-  (interactive "r")
+  (interactive "R")
   (let* ((link (simpleclip-get-contents))
 	 (link-name
 	  (cond
