@@ -481,7 +481,8 @@
      (define-key org-mode-map (kbd "C-'") nil)
      (define-key org-mode-map (kbd "S-<return>") #'my/start-checklist)
      (define-key org-mode-map (kbd "C-<up>") #'org-previous-visible-heading)
-     (define-key org-mode-map (kbd "C-<down>") #'org-next-visible-heading)))
+     (define-key org-mode-map (kbd "C-<down>") #'org-next-visible-heading)
+     (define-key org-mode-map (kbd "C-<tab>") #'org-cycle)))
 
 (global-set-key (kbd "C-x ,") (lambda() (interactive)(find-file user-init-file)))
 
