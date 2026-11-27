@@ -68,9 +68,7 @@
 (setq orghirn-dir (f-join home-dir "orghirn"))
 (if (not (f-directory? orghirn-dir))
     (mkdir orghirn-dir))
-(setq assets-dir (f-join orghirn-dir "assets/"))
-(if (not (f-directory? assets-dir))
-    (mkdir assets-dir))
+(setq assets-dir "./assets/")
 
 ;; Workaround (https://www.reddit.com/r/emacs/comments/1hayavx/invalid_function_orgelementwithdisabledcache/)
 ;; (setq native-comp-jit-compilation-deny-list '(".*org-element.*"))
@@ -240,18 +238,25 @@
 (add-hook 'org-cycle-hook #'org-cycle-hide-drawers)
 (add-hook 'org-cycle-hook #'my/org-cycle-hide-blocks)
 
-(defun my/org-link-copy ()
-  "Extract URL from org-mode link and add it to kill ring."
+(defun my/at-org-link ()
+  "Determines if point is at an org link."
   (interactive)
   (let* ((link (org-element-lineage (org-element-context) '(link) t))
          (type (org-element-property :type link))
          (path (org-element-property :path link))
          (url (concat type ":" path)))
-    (cond
-     ((not type) (message "No link."))
-     (t (kill-new url)
-	(simpleclip-set-contents (substring-no-properties (car kill-ring)))
-	(message "Copied URL.")))))
+    (if (not type)
+	nil
+      url)))
+
+(defun my/org-link-copy ()
+  "Extract URL from org-mode link and add it to kill ring."
+  (interactive)
+  (let ((url (my/at-org-link)))
+    (when (url)
+      (kill-new url)
+      (simpleclip-set-contents (substring-no-properties (car kill-ring)))
+      (message "Copied URL."))))
 
 (defun my/org-link-copy-mouse (ev)
   (interactive "e")
@@ -259,12 +264,20 @@
   (my/org-link-copy))
 
 (define-key org-mode-map (kbd "C-x C-l") #'my/org-link-copy)
+(global-set-key (kbd "C-c l") #'org-store-link)
+
+;; Org-mouse
 (setq mouse-1-follows-link nil)
 (setq org-mouse-1-follows-link nil)
+(define-key global-map    [mouse-1]
+            #'(lambda (ev)
+                (interactive "e")
+                (mouse-set-point ev)
+                (when (and (string-equal major-mode "org-mode") (my/at-org-link))
+                  (org-link-preview))))
 (org-defkey org-mouse-map [mouse-2] #'ignore)
 (org-defkey org-mouse-map [down-mouse-2] #'my/org-link-copy-mouse)
 (org-defkey org-mouse-map [mouse-3] #'org-open-at-mouse)
-(global-set-key (kbd "C-c l") #'org-store-link)
 
 (org-link-set-parameters "alm"
                          :follow (lambda (label) (browse-url (concat "alm:" label))))
@@ -299,13 +312,15 @@
 
 (defun my/clipboard-insert-picture (identifier)
   (interactive "sIdentifier: ")
+  (if (not (f-directory? assets-dir))
+    (mkdir assets-dir))
   (let* ((filename (f-join assets-dir (concat  identifier ".png")))
-	(command-line (concat "xclip -selection clipboard -t image/png -o > \"" filename "\"")))
+	 (command-line (concat "xclip -selection clipboard -t image/png -o > \"" filename "\"")))
     (message command-line)
     (shell-command command-line)
     (insert (concat "#+NAME: fig:" identifier))
     (newline)
-    (insert (concat "[[" filename "]]"))))
+    (insert (concat "[[file:" filename "]]"))))
 
 (define-key org-mode-map (kbd "C-c C-x C-p") #'my/clipboard-insert-picture)
 
@@ -568,8 +583,8 @@
   (corfu-cycle t)                ; Durch Kandidaten durchschleifen
   (corfu-separator ?\s)          ; Trennzeichen für Orderless (optional)
   (corfu-preview-current nil)
-  (corfu-quit-no-match t)
-  (corfu-quit-at-boundary t)
+  (corfu-quit-no-match 'separator)
+  (corfu-quit-at-boundary 'separator)
   :init
   (global-corfu-mode)
   (corfu-popupinfo-mode))
@@ -794,4 +809,7 @@
 
 ;; CLI parsing
 (add-to-list 'command-switch-alist '("-orghirn" . my/orghirn-fn))
+
+;; TODO
+;; change to more modern 'keymap' functions
 
