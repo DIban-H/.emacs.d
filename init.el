@@ -6,13 +6,13 @@
  ;; If there is more than one, they won't work right.
  '(column-number-mode t)
  '(inhibit-startup-screen t)
- '(menu-bar-mode t)
+ '(menu-bar-mode nil)
  '(package-selected-packages
    '(ace-window cape consult consult-org-roam corfu embark embark-consult
 		f fireplace iedit magit marginalia markdown-mode
-		org-appear org-bullets org-roam org-roam-ui paredit
-		plantuml-mode rust-mode simpleclip snow vertico wgrep
-		zenburn-theme))
+		multiple-cursors org-appear org-bullets org-roam
+		org-roam-ui paredit plantuml-mode rust-mode simpleclip
+		snow vertico wgrep zenburn-theme))
  '(scroll-bar-mode nil)
  '(search-invisible nil)
  '(tool-bar-mode nil)
@@ -39,6 +39,7 @@
 (require 'simpleclip)
 (require 'ace-window)
 (require 'yascroll)
+(require 'multiple-cursors)
 
 ;;; Apperance
 ;; (dolist (font (x-list-fonts "*"))
@@ -58,6 +59,7 @@
 ;;; Global settings
 (prefer-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
+(setq indent-tabs-mode nil)
 
 (setq emacs-dir (f-full default-directory))
 (setq home-dir (f-full "~"))
@@ -100,6 +102,47 @@
 (put 'narrow-to-region 'disabled nil)
 (delete-selection-mode t)
 (simpleclip-mode t)
+
+;;; Global Keys
+(defvar linez-minor-mode-map
+  (let ((map (make-sparse-keymap)))
+					; Bewegung
+    ;; (define-key map (kbd "M-s-<up>") #'my/move-line-up)
+    ;; (define-key map (kbd "M-s-<down>") #'my/move-line-down)
+					; Zeilenmanipulation
+    (define-key map (kbd "C-S-<up>") #'my/duplicate-line-up)
+    (define-key map (kbd "C-S-<down>") #'my/duplicate-line-down)
+    (define-key map (kbd "M-k") #'kill-whole-line)
+					; Umlaute
+    (define-key map (kbd "M-;")  #'(lambda() (interactive) (insert "ö")))
+    (define-key map (kbd "M-:")  #'(lambda() (interactive) (insert "Ö")))
+    (define-key map (kbd "M-'")  #'(lambda() (interactive) (insert "ä")))
+    (define-key map (kbd "M-\"") #'(lambda() (interactive) (insert "Ä")))
+    (define-key map (kbd "M-[")  #'(lambda() (interactive) (insert "ü")))
+    (define-key map (kbd "M-{")  #'(lambda() (interactive) (insert "Ü")))
+    (define-key map (kbd "M--")  #'(lambda() (interactive) (insert "ß")))
+    map)
+  "linez-minor-mode keymap.")
+
+(define-minor-mode linez-minor-mode
+  "A minor mode so that my key settings override annoying major modes."
+  :init-value t
+  :lighter " linez")
+
+(linez-minor-mode t)
+
+;; dired
+					; https://www.jamescherti.com/emacs-dired-configuration/
+(setq dired-listing-switches "-lhD")
+(setq dired-kill-when-opening-new-dired-buffer t)
+(setq dired-movement-style 'cycle-files)
+(setq dired-auto-revert-buffer 'dired-directory-changed-p)
+(setq dired-vc-rename-file t)
+(setq dired-deletion-confirmer 'y-or-n-p
+      dired-recursive-deletes 'top
+      dired-clean-confirm-killing-deleted-buffers nil)
+(setq dired-recursive-copies 'always
+      dired-create-destination-dirs 'ask)
 
 
 ;;; Org
@@ -243,7 +286,7 @@
      ((string-match "merge_requests" str) (concat "MR" ending))
      (t ending))))
 
-(defun my/insert-link (start end)
+(defun my/clipboard-insert-link (start end)
   (interactive "R")
   (let* ((link (simpleclip-get-contents))
 	 (link-name
@@ -252,9 +295,9 @@
 	   (t (my/create-link-name link)))))
     (org-insert-link nil link link-name)))
 
-(define-key org-mode-map (kbd "C-c C-x C-l") #'my/insert-link)
+(define-key org-mode-map (kbd "C-c C-x C-l") #'my/clipboard-insert-link)
 
-(defun my/insert-clipboard-image (identifier)
+(defun my/clipboard-insert-picture (identifier)
   (interactive "sIdentifier: ")
   (let* ((filename (f-join assets-dir (concat  identifier ".png")))
 	(command-line (concat "xclip -selection clipboard -t image/png -o > \"" filename "\"")))
@@ -262,30 +305,29 @@
     (shell-command command-line)
     (insert (concat "#+NAME: fig:" identifier))
     (newline)
-    (insert (concat "[[" filename "]]")))
-  (org-link-preview-region))
+    (insert (concat "[[" filename "]]"))))
 
-(define-key org-mode-map (kbd "C-c C-x C-p") #'my/insert-clipboard-image)
+(define-key org-mode-map (kbd "C-c C-x C-p") #'my/clipboard-insert-picture)
 
 (defvar my/org-toggle-blocks nil)
 (defun my/org-toggle-blocks ()
   (interactive)
-  (setq my/org-toggle-blocks (not my/org-toggle-blocks))
   (if my/org-toggle-blocks
       (progn
         (org-fold-hide-block-all)
         (org-fold-hide-drawer-all))
     (progn
       (org-fold-show-all)
-      (org-fold-hide-drawer-all))))
+      (org-fold-hide-drawer-all)))
+  (setq my/org-toggle-blocks (not my/org-toggle-blocks)))
 
 (defvar my/org-toggle-inline-images nil)
 (defun my/org-toggle-inline-images ()
   (interactive)
-  (setq my/org-toggle-inline-images (not my/org-toggle-inline-images))
   (if my/org-toggle-inline-images
-      (org-remove-inline-images)
-    (org-display-inline-images)))
+      (org-link-preview-clear)
+    (org-link-preview-region))
+  (setq my/org-toggle-inline-images (not my/org-toggle-inline-images)))
 
 (define-key org-mode-map (kbd "<f5>") #'my/org-toggle-blocks)
 (define-key org-mode-map (kbd "<f6>") #'my/org-toggle-inline-images)
@@ -426,26 +468,6 @@
 (setq org-plantuml-jar-path (f-join home-dir "plantuml.jar"))
 (define-key org-mode-map (kbd "C-c i p") #'my/insert-plantuml-block)
 
-;;; Global Keys
-(defvar linez-minor-mode-map
-  (let ((map (make-sparse-keymap)))
-    ;; (define-key map (kbd "M-s-<up>") #'my/move-line-up)
-    (define-key map (kbd "C-<up>") #'org-previous-visible-heading)
-    ;; (define-key map (kbd "M-s-<down>") #'my/move-line-down)
-    (define-key map (kbd "C-<down>") #'org-next-visible-heading)
-    (define-key map (kbd "C-S-<up>") #'my/duplicate-line-up)
-    (define-key map (kbd "C-S-<down>") #'my/duplicate-line-down)
-    (define-key map (kbd "M-k") #'kill-whole-line)
-    map)
-  "linez-minor-mode keymap.")
-
-(define-minor-mode linez-minor-mode
-  "A minor mode so that my key settings override annoying major modes."
-  :init-value t
-  :lighter " linez")
-
-(linez-minor-mode t)
-
 (defun my/start-checklist ()
   "Starts a new line with org checklist"
   (interactive "*")
@@ -457,19 +479,20 @@
   '(progn
      (define-key org-mode-map (kbd "C-,") nil)
      (define-key org-mode-map (kbd "C-'") nil)
-     (define-key org-mode-map (kbd "S-<return>") #'my/start-checklist)))
+     (define-key org-mode-map (kbd "S-<return>") #'my/start-checklist)
+     (define-key org-mode-map (kbd "C-<up>") #'org-previous-visible-heading)
+     (define-key org-mode-map (kbd "C-<down>") #'org-next-visible-heading)))
 
 (global-set-key (kbd "C-x ,") (lambda() (interactive)(find-file user-init-file)))
 
 (global-set-key (kbd "M-o") #'ace-window)
-(global-set-key (kbd "M-i") #'iedit-mode)
+(global-set-key (kbd "M-i") #'iedit-mode) ; When in iedit-mode: C-' | region M-i
 (global-set-key (kbd "C-;") #'comment-line)
 (global-set-key (kbd "C-c s") #'my/separate-headings)
 (global-set-key (kbd "M-\\") #'my/kill-whitespace)
 (global-set-key (kbd "C-c d") #'my/browse-file-directory)
 
-(global-set-key (kbd "C-S-n") #'(lambda() (interactive)(next-line 10))
-		)
+(global-set-key (kbd "C-S-n") #'(lambda() (interactive)(next-line 10)))
 (global-set-key (kbd "C-S-p") #'(lambda() (interactive)(previous-line 10)))
 
 (global-set-key (kbd "C-c b") #'my/add-outer-box)
@@ -479,6 +502,11 @@
 ;; avy
 (define-key global-map (kbd "M-j") #'avy-goto-char-timer)
 
+;;ltiple-cursor
+(global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
+(global-set-key (kbd "C->") 'mc/mark-next-like-this)
+(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
+(global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
 
 ;; Minad/Iceberg stack https://lambdaland.org/posts/2024-05-30_top_emacs_packages/
 ;; Vertico + Consult + Orderless + Marginalia + Corfu + Cape + Embark
